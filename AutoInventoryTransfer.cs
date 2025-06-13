@@ -32,17 +32,15 @@ public unsafe class AutoInventoryTransfer : DailyModuleBase
     public override ModuleInfo Info { get; } = new()
     {
         Title = "物品快速转移",
-        Description = "按住左Shift键并右键点击物品时，自动转移物品\n" +
-                      "· 陆行鸟鞍囊: 放入/取出物品\n" +
-                      "· 雇员: 存入/取回物品",
+        Description = "按住打断热键并右键点击物品时，自动转移物品",
         Category = ModuleCategories.UIOptimization,
     };
 
     // 陆行鸟鞍囊操作的菜单文本
-    private readonly string[] saddlebagTexts = ["放入陆行鸟鞍囊", "从陆行鸟鞍囊取出"];
+    private readonly string[] saddlebagTexts = ["放入陆行鸟鞍囊", "从陆行鸟鞍囊中取回"];
     
-    // 雇员保管操作的菜单文本（含多语言支持）
-    private readonly string[] entrustTexts = ["交给雇员保管", "从雇员处取回", "Entrust to Retainer", "リテイナーに預ける"];
+    // 雇员保管操作的菜单文本
+    private readonly string[] entrustTexts = ["交给雇员保管", "从雇员处取回"];
 
     public override void Init()
     {
@@ -54,21 +52,21 @@ public unsafe class AutoInventoryTransfer : DailyModuleBase
 
     private void OnContextMenuOpened(IMenuOpenedArgs args)
     {
-        // 检查Shift键是否按下
+        // 检查打断热键是否按下
         if (!IsConflictKeyPressed()) return;
         
         // 检查是否是物品菜单
         if (!IsValidInventoryMenu(args.AddonName)) return;
 
         // 处理陆行鸟鞍囊转移 (需要鞍囊窗口和物品栏窗口都打开)
-        if (IsChocoboBagOpen() && IsInventoryOpen())
+        if (IsChocoboBagOpen() || IsInventoryOpen())
         {
             HandleSaddleBagTransfer();
             return;
         }
 
         // 处理雇员保管功能 (需要雇员物品窗口和物品栏窗口都打开)
-        if (IsRetainerInventoryOpen() && IsInventoryOpen())
+        if (IsRetainerInventoryOpen() || IsInventoryOpen())
         {
             HandleRetainerEntrust();
             return;
@@ -129,14 +127,14 @@ public unsafe class AutoInventoryTransfer : DailyModuleBase
     private bool IsChocoboBagOpen()
     {
         // 检查是否有陆行鸟鞍囊窗口打开
-        return TryGetAddonByName<AtkUnitBase>("SaddleBag", out _) || 
+        return TryGetAddonByName<AtkUnitBase>("SaddleBag", out _) ||
                TryGetAddonByName<AtkUnitBase>("SaddleBagGrid", out _);
     }
-    
+
     private bool IsInventoryOpen()
     {
         // 检查是否有玩家物品栏窗口打开
-        return TryGetAddonByName<AtkUnitBase>("Inventory", out _) || 
+        return TryGetAddonByName<AtkUnitBase>("Inventory", out _) ||
                TryGetAddonByName<AtkUnitBase>("InventoryGrid", out _) ||
                TryGetAddonByName<AtkUnitBase>("InventoryLarge", out _);
     }
@@ -146,20 +144,6 @@ public unsafe class AutoInventoryTransfer : DailyModuleBase
         // 检查是否有雇员物品管理窗口打开
         return TryGetAddonByName<AtkUnitBase>("RetainerGrid", out _) || 
                TryGetAddonByName<AtkUnitBase>("RetainerInventoryLarge", out _);
-    }
-
-    public override void ConfigUI()
-    {
-        ImGui.TextColored(LightSkyBlue, "使用说明:");
-        
-        using (ImRaii.PushIndent())
-        {
-            ImGui.TextWrapped("按住 Shift 键并右键点击物品时，根据当前打开的窗口自动执行以下操作：");
-            
-            ImGui.Spacing();
-            ImGui.BulletText("当陆行鸟鞍囊窗口打开时：自动放入或取出物品");
-            ImGui.BulletText("当雇员物品窗口打开时：自动存入或取回物品");
-        }
     }
 
     public override void Uninit()
