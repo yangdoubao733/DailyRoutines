@@ -33,14 +33,15 @@ public unsafe class AutoInventoryTransfer : DailyModuleBase
     {
         Title = "物品快速转移",
         Description = "按住打断热键并右键点击物品时，自动转移物品",
-        Category = ModuleCategories.UIOptimization,
+        Category = ModuleCategories.UIOperation,
+        ModulesPrerequisite = ["AutoRetainerWork"],
+        Author = ["Yangdoubao"]
     };
 
-    // 陆行鸟鞍囊操作的菜单文本
-    private readonly string[] saddlebagTexts = ["放入陆行鸟鞍囊", "从陆行鸟鞍囊中取回"];
+
     
-    // 雇员保管操作的菜单文本
-    private readonly string[] entrustTexts = ["交给雇员保管", "从雇员处取回"];
+    // 菜单文本
+    private readonly string[] entrustTexts = ["交给雇员保管", "从雇员处取回", "放入陆行鸟鞍囊", "从陆行鸟鞍囊中取回"];
 
     public override void Init()
     {
@@ -54,26 +55,20 @@ public unsafe class AutoInventoryTransfer : DailyModuleBase
     {
         // 检查打断热键是否按下
         if (!IsConflictKeyPressed()) return;
-        
+
         // 检查是否是物品菜单
         if (!IsValidInventoryMenu(args.AddonName)) return;
 
         // 处理陆行鸟鞍囊转移 (需要鞍囊窗口和物品栏窗口都打开)
-        if (IsChocoboBagOpen() || IsInventoryOpen())
+        if (IsInventoryOpen())
         {
-            HandleSaddleBagTransfer();
-            return;
-        }
-
-        // 处理雇员保管功能 (需要雇员物品窗口和物品栏窗口都打开)
-        if (IsRetainerInventoryOpen() || IsInventoryOpen())
-        {
-            HandleRetainerEntrust();
+            HandleTransfer();
             return;
         }
     }
 
-    private void HandleSaddleBagTransfer()
+
+    private void HandleTransfer()
     {
         TaskHelper.Abort();
         TaskHelper.Enqueue(() => 
@@ -81,34 +76,17 @@ public unsafe class AutoInventoryTransfer : DailyModuleBase
             // 确保上下文菜单已打开
             if (!IsAddonAndNodesReady(InfosOm.ContextMenu)) return false;
 
-            // 尝试查找并点击陆行鸟鞍囊相关菜单项
-            foreach (var text in saddlebagTexts)
-            {
-                if (ClickContextMenu(text))
-                    return true;
-            }
-            return true;
-        }, "点击陆行鸟鞍囊相关菜单项");
-    }
-
-    private void HandleRetainerEntrust()
-    {
-        TaskHelper.Abort();
-        TaskHelper.Enqueue(() => 
-        {
-            // 确保上下文菜单已打开
-            if (!IsAddonAndNodesReady(InfosOm.ContextMenu)) return false;
-
-            // 尝试查找并点击"交给雇员保管"菜单项
+            // 尝试查找并点击相关菜单项
             foreach (var text in entrustTexts)
             {
                 if (ClickContextMenu(text))
                     return true;
             }
-            
             return true;
-        }, "点击交给雇员保管菜单项");
+        }, "点击相关菜单项");
     }
+
+
 
     private bool IsValidInventoryMenu(string? addonName)
     {
@@ -124,12 +102,7 @@ public unsafe class AutoInventoryTransfer : DailyModuleBase
                addonName == "RetainerInventoryLarge";
     }
 
-    private bool IsChocoboBagOpen()
-    {
-        // 检查是否有陆行鸟鞍囊窗口打开
-        return TryGetAddonByName<AtkUnitBase>("SaddleBag", out _) ||
-               TryGetAddonByName<AtkUnitBase>("SaddleBagGrid", out _);
-    }
+
 
     private bool IsInventoryOpen()
     {
@@ -139,12 +112,7 @@ public unsafe class AutoInventoryTransfer : DailyModuleBase
                TryGetAddonByName<AtkUnitBase>("InventoryLarge", out _);
     }
 
-    private bool IsRetainerInventoryOpen()
-    {
-        // 检查是否有雇员物品管理窗口打开
-        return TryGetAddonByName<AtkUnitBase>("RetainerGrid", out _) || 
-               TryGetAddonByName<AtkUnitBase>("RetainerInventoryLarge", out _);
-    }
+
 
     public override void Uninit()
     {
